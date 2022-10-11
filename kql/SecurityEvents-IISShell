@@ -1,0 +1,6 @@
+// Detects an abnormal shell being spawned on a webserver running IIS.
+// This could indicate an attacker has compromised the server via a web vulnerability and has been able to spawn a shell.
+SecurityEvent
+| where EventID in (4688)
+| where ParentProcessName contains "w3wp"
+| where NewProcessName contains "cmd.exe" or NewProcessName contains "powershell"

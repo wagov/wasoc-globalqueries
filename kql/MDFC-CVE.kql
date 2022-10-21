@@ -1,0 +1,17 @@
+// Microsoft Defender for Cloud CVE data aggregation.
+securityresources 
+| where type == 'microsoft.security/assessments' 
+| where * contains 'Vulnerabilities' | summarize by assessmentKey=name 
+| where assessmentKey in ('dbd0cb49-b563-45e7-9724-889e799fa648', '1195afff-c881-495e-9bc5-1486211ae03f') 
+| join kind=inner (securityresources 
+| where type == 'microsoft.security/assessments/subassessments' 
+| extend assessmentKey = extract('.*assessments/(.+?)/.*',1,  id)) on assessmentKey 
+| project assessmentKey, subassessmentKey=name, id, parse_json(properties), resourceGroup, subscriptionId, tenantId 
+| extend displayName = properties.displayName, resourceId = properties.resourceDetails.id, resourceSource = properties.resourceDetails.source, category = properties.category, severity = properties.status.severity, code = properties.status.code, timeGenerated = properties.timeGenerated, remediation = properties.remediation, impact = properties.impact, vulnId = properties.id, additionalData = properties.additionalData, cvssList = properties.additionalData.cvss, cveArray = properties.additionalData.cve, source = case(assessmentKey == 'dbd0cb49-b563-45e7-9724-889e799fa648', 'Container Vulnerability Scanner', properties.additionalData.source) 
+| mv-expand todynamic(cveArray) 
+| extend CVEs = parse_json(cveArray['title']), CVSS2 = parse_json(cvssList['2.0']['base']), CVSS3 = case(source == 'Microsoft threat and vulnerability management', parse_json(cveArray['cvssScore']), parse_json(cvssList['3.0']['base'])), resourcename = case(additionalData.assessedResorucetype == 'ContainerRegistryVulnerability', additionalData.respositoryName, split(id, '/')[8]), CVEpublishtime = case(source == 'Microsoft threat and vulnerability management', parse_json(cveArray['publishedDate']), parse_json(additionalData['publishedTime'])) 
+| project-away cveArray, cvssList, additionalData, id, properties, resourceId 
+| project resourcename, timeGenerated, CVEs, CVSS2, CVSS3, CVEpublishtime, code, source, vulnId, remediation, impact, category, resourceSource, resourceGroup, subscriptionId, tenantId 
+| where code != 'Healthy' 
+| where timeGenerated >ago(24h) 
+| order by tostring(resourcename)

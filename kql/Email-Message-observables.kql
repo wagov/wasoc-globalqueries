@@ -1,0 +1,10 @@
+//Email-Message Observables   
+//SENDER MAIL FROM = The sender in the Envolope, whereras SENDER FROM = The sender in the Letter
+//Only evaluates email that are delivered to users, excludes blocked/ junked email
+let binSize_ = 1d;
+let timeframe = 90d;
+EmailEvents
+| where TimeGenerated > ago(timeframe)
+| where EmailDirection != "Outbound" //Only show Inbound/ Intra-Org email
+| where DeliveryAction == "Delivered" //Only email that got delivered
+| summarize first_seen = bin(min(TimeGenerated),binSize_) , last_seen = bin(max(TimeGenerated), binSize_) by SenderFromAddress, SenderMailFromAddress, SenderFromDomain, SenderMailFromDomain

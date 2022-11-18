@@ -1,0 +1,9 @@
+//IPvX - SignIn-context observables
+//Use IPAddress field
+let binSize_ = 1d;
+let timeframe = 90d;
+SigninLogs
+| where TimeGenerated > ago(timeframe)
+| extend FailureOrSuccess = iff(ResultType in ("0", "50125", "50140", "70043", "70044","500121","50074"), "Success", "Failure") // Split out failure versus non-failure types
+| where FailureOrSuccess == "Success"
+| summarize count() ,first_seen=bin(min(TimeGenerated),binSize_),last_seen=bin(max(TimeGenerated),binSize_)  by IPAddress

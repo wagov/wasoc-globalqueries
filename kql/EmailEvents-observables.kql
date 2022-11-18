@@ -1,7 +1,0 @@
-//Email Observable 
-//MAIL FROM = The sender in the Envolope, whreras FROM = The sender in the Letter
-//Only evaluates email that are delivered to users, excludes blocked/ junked email
-EmailEvents
-| summarize arg_max(TimeGenerated,*) by NetworkMessageId
-| where EmailDirection != "Outbound" //Only show Inbound/ Intra-Org email
-| where DeliveryAction == "Delivered" //Only email that got delivered

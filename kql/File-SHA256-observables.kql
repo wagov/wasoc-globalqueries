@@ -1,0 +1,14 @@
+//File-SHA256 Observables
+//Version: 1.0 
+//Only from Device* table (Defender for Endpoint)
+let binSize_ = 1d;
+let timeframe = 90d;
+let SHA256_ = union isfuzzy=true Device*
+| where TimeGenerated > ago(timeframe)
+| where isnotempty(SHA256)
+| summarize count(), first_seen=bin(min(TimeGenerated),binSize_),last_seen=bin(max(TimeGenerated),binSize_) , listAction = make_set(ActionType) by SHA256, FileName;
+let InitiateSHA256_ = union isfuzzy=true Device*
+| where TimeGenerated > ago(timeframe)
+| where isnotempty(InitiatingProcessSHA256)
+| summarize count(), first_seen=bin(min(TimeGenerated),binSize_),last_seen=bin(max(TimeGenerated),binSize_) , listAction = make_set(ActionType) by SHA256=InitiatingProcessSHA256, FileName= InitiatingProcessFileName;
+union isfuzzy=true SHA256_, InitiateSHA256_
